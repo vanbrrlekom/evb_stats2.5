@@ -1,8 +1,17 @@
 ---
-title: "Exercises"
+title: "exercises2"
+author: "Elli van Berlekom"
 format: html
 editor: source
 ---
+
+```{r Clear memory and set random seed }
+rm(list = ls()) # clear memory
+graphics.off()  # clear all plots
+cat("\014")     # clear console (same as Ctrl-L in console)
+set.seed(123)   # Makes it reproducable also if random number generators are used
+```
+
 
 ```{r setup}
 library(rethinking)
@@ -189,6 +198,85 @@ for (j in 0:3) {
 }
 ```
 
+```{r}
+
+
+a_bar <- 2
+  sigma <- 0.1
+nclusters <- 60
+nponds =60
+
+ni <- as.integer(rep(c(5,10,25,35), each = 15))
+
+set.seed(5005)
+#true params
+true_a <- rnorm(nponds, mean = a_bar, sd = sigma)
+
+dsim <- data.frame(pond = 1:nponds, ni = ni, true_a = true_a)
+
+dsim$true_p <- plogis(dsim$true_a)
+
+dsim$si <- rbinom(nponds, size = dsim$ni, prob = dsim$true_p)
+
+#make a dataframe
+dat <- tibble(si = dsim$si, ni = dsim$ni, pond = dsim$pond)
+
+#fit a model, do the pooling
+fit <- ulam(
+  alist(
+    si ~ dbinom(ni, p),
+    logit(p) <- a_pond[pond],
+    a_pond[pond] ~ dnorm(a_bar, sigma),
+    a_bar ~ dnorm(0, 1.5),
+    sigma ~ dexp(1)
+    ), 
+  data = dat, chains = 4, refresh = 0
+)
+
+dsim$p_nopol <- dsim$si/dsim$ni
+
+post <- extract.samples(fit)
+dsim$p_partpool <- apply(plogis(post$a_pond), 2, median)
+
+# Calculate errors
+nopool_error <- abs(dsim$p_nopol-dsim$true_p)
+partpool_error <- abs(dsim$p_partpool-dsim$true_p)
+
+plot(dsim$pond, dsim$p_nopol, pch = 21, bg = "blue", xlab = "Pond ID", 
+     ylab = "Estimated Survival Probability", main = "title")
+points(dsim$pond, dsim$p_partpool, pch = 21, bg = "white")
+# points(dsim$pond, dsim$true_p, pch = "X")
+
+pbar <- plogis(median(post$a_bar))
+lines(c(0, 61), c(pbar, pbar), col = "red", lty = 3)
+lines(c(15.5, 15.5), c(0, 1.1), col = "grey")
+lines(c(30.5, 30.5), c(0, 1.1), col = "grey")
+lines(c(45.5, 45.5), c(0, 1.1), col = "grey")
+
+# Average error per pond-size
+error_avg <- aggregate(list(nopool_error = nopool_error), 
+                        list(pondsize = dsim$ni), mean)
+error_avg$partpool_error <- aggregate(partpool_error, list(dsim$ni), mean)[, 2]
+round(error_avg, 2)
+
+plot(dsim$pond, nopool_error, pch = 21, bg = "blue", xlab = "Pond ID", 
+     ylab = "Absolute error", main = "title")
+points(dsim$pond, partpool_error, pch = 21, bg = "white")
+lines(c(0, 61), c(pbar, pbar), col = "red", lty = 3)
+lines(c(15.5, 15.5), c(0, 1.1), col = "grey")
+lines(c(30.5, 30.5), c(0, 1.1), col = "grey")
+lines(c(45.5, 45.5), c(0, 1.1), col = "grey")
+
+
+# Add lines for average error
+for (j in 0:3) {
+  lines(c(1 + 15*j, 14 + 15*j), c(error_avg[j+1, 2], error_avg[j+1, 2]), col = "blue" )
+  lines(c(1 + 15*j, 14 + 15*j), c(error_avg[j+1, 3], error_avg[j+1, 3]), lty = 2)
+}
+
+```
+
+
 And now let's try out some variations of different parameters
 
 ```{r 6}
@@ -196,12 +284,8 @@ sim_tads(title = "A bar = 2, Sigma = 0.1") ## McElreaths' baseline
 ```
 
 
-```{r 6.1}
-sim_tads(sigma = 0.5, title = "A bar = 10, Sigma = 5") #arge sigma
-```
-
-
 ```{r 6.2}
+sim_tads(sigma = 0.5, title = "A bar = 10, Sigma = 5") #arge sigma
 #sim_tads(a_bar = 10, title = "A bar = 10, Sigma = 0.1") #High a bar
 #sim_tads(a_bar = 0.4, title = "A_bar = 0.4, Sigma = 0.1") #Very low a bar
 
@@ -235,7 +319,7 @@ $$
  
  And of course, specify it using rethinking code.
  
-```{r 7}
+```{r 7, echo = FALSE}
 data(reedfrogs)
 d <- reedfrogs %>% 
   mutate(tank = 1:48)
@@ -248,10 +332,7 @@ dat <- tibble(
   pred = d$pred,
   tank = d$tank,
 )
-```
 
-
-```{r 7}
 m0 <- ulam(
   alist(
     S ~ dbinom(N, p),
@@ -265,7 +346,7 @@ m0 <- ulam(
 Now, we do a more complicated model with main effects of both size and predation.
 
 
-```{r include=FALSE}
+```{r 8, include=FALSE}
 
 m_size <- ulam(
   alist(
@@ -345,7 +426,7 @@ But then, the waic values are pretty similar. Maybe that's because our ability t
 
  > Re-estimate the basic Reed frog varying intercept model, but now using a Cauchy distribution in place of the Gaussian distribution for the varying intercepts. That is, fit this model:”
 
- > Compare the posterior means of the intercepts, αtank, to the posterior means produced in the chapter, using the customary Gaussian prior. Can you explain the pattern of differences? Take note of any change in the mean α as well.”
+ > Compare the posterior means of the intercepts, tank, to the posterior means produced in the chapter, using the customary Gaussian prior. Can you explain the pattern of differences? Take note of any change in the mean α as well.”
 
 
 
@@ -371,11 +452,28 @@ m_gaussian <- ulam(
 ```
 
 
+Okay, first, we are going to sample from the posterior distrbutions
+
 ```{r}
-post_cauchy <- extract.samples(m_cauchy)
+post_cauchy <- extract.samples(m_cauchy) 
 post_gaussian <- extract.samples(m_gaussian)
+```
+
+And then compare the values that we get from that 
+
+```{r}
+# Yes, using this unweildy code
+cauchy_abar = c(median(post_cauchy$a_bar), HPDI(post_cauchy$a_bar))
+cauchy_sigma = c(median(post_cauchy$sigma), HPDI(post_cauchy$sigma))
+gaussian_abar = c(median(post_gaussian$a_bar), HPDI(post_gaussian$a_bar))
+gaussian_sigma = c(median(post_gaussian$sigma), HPDI(post_gaussian$sigma))
+
+rbind(cauchy_abar, gaussian_abar, cauchy_sigma, gaussian_sigma)
 
 ```
+
+And doing this, it becomes pretty clear that cauchy leads to much wider posteriors espeically for the sigma. 
+
 
 ### M4
 “Now use a Student-t distribution with ν=2 for the intercepts:
@@ -384,15 +482,32 @@ Refer back to the Student-t example in Chapter 7 (page 234), if necessary. Compa
 ”
 
 ```{r}
-m_cauchy <- ulam(
+m_student <- ulam(
   alist(
     S ~ dbinom(N, p),
     logit(p) <- a[tank],
     a[tank] ~ dstudent(nu = 2, a_bar, sigma),
-    a_bar ~ dnorm(0, 1.5),
+    a_bar ~ dstudent(nu = 2, 0, 1.5),
     sigma ~ dexp(1)
   ), data = dat , chains = 4 , log_lik = TRUE, refresh = 0)
 ```
+
+Doing the same as above:
+
+```{r}
+post_student <- extract.samples(m_student)
+
+student_abar = c(median(post_student$a_bar), HPDI(post_student$a_bar))
+student_sigma = c(median(post_student$sigma), HPDI(post_student$sigma))
+```
+
+And then putting it all together again
+
+```{r}
+rbind(cauchy_abar, gaussian_abar, student_abar, cauchy_sigma, gaussian_sigma, student_sigma)
+```
+
+It seems like student's distribution is somewhere between gaussian and cauchy
 
 :::
 # MN2
@@ -425,11 +540,10 @@ m_runner <- ulam(
     sigma_a ~ dexp(0.11)
   ), data = dat , chains = 4 , log_lik = TRUE, refresh = 0)
 
-precis(m_runner, depth = 2)
+precis(m_runner)
 ```
  How to visualize this? Maybe an overall plot with all the data and then a few plots
- for the individual runners to show that this is not good enough. We've visualized this,
- but we're also getting some pretty alarming error messages, suggesting that the model may be misspecified.
+ for the individual runners to show that this is not good enough. The first plot shows the overall relationship between age and time. This is the unpooled data. Next, the data for individual runners is shown. The black line represents the complete pooling, the red line represents no pooling and the blue line shows partial pooling using the intercepts only model. 
  
 ```{r}
 
@@ -442,8 +556,7 @@ post <- extract.samples(m_runner)$a %>%
   arrange(runner)
 
 dat_combined <- dat %>% 
-  left_join(post, by = "runner") %>% 
-  mutate(unpooled = mean(net))
+  left_join(post, by = "runner") 
 
 dat_combined <- dat_combined %>% 
   group_by(runner) %>% 
@@ -456,7 +569,7 @@ dat %>% ggplot(aes(x = age_c, y = net)) +
   theme_classic()
 
 
-dat_combined %>% ggplot(aes(x = age_c, y = net)) + # again, fill in with numbers from m_sleep
+dat_combined %>% ggplot(aes(x = age_c, y = net)) + # again, fill in with numbers from m_runne
   geom_point() + 
   facet_wrap("runner") +
   geom_abline(aes(intercept = unpooled, slope =  1.23), linetype = "dashed", color = "red")+
@@ -487,7 +600,7 @@ m_sleep <- ulam(
 
 ```
 
-I'm going to come back to this, but here is the code to visualize the data
+I'm going to come back to this, but here is the code to visualize the data. The first plot shows the overall relationship between age and time. This is the unpooled data. Next, the data for individual runners is shown. The black line represents the complete pooling. Yes, I here I don't show the subject-level unpooled data, but there was a bug that made it not show up properly and I simply choose to prioritize other elements. 
 
 ```{r}
 
@@ -501,11 +614,17 @@ post <- extract.samples(m_sleep)$a %>%
 
 d_combined <- d %>% # add each person's intercept, useful for making the figure
   mutate(Subject = as.integer(as.factor(Subject))) %>% 
-  left_join(post, by = "Subject")
+  left_join(post, by = "Subject") 
+
+d_combined <- d_combined %>% #calculate the unpooled median for each subject
+  group_by(Subject) %>% 
+  mutate(unpooled = median(Reaction)) %>% 
+  ungroup()
+
 
 d %>% ggplot(aes(x = Days_bl, y = Reaction)) +
   geom_point() + 
-  geom_abline(intercept = 267.72, slope =  11.47, linetype = "dashed", color = "red") + # fill in with numbers from m_sleep
+  geom_abline(intercept = 267.72, slope =  11.47, linetype = "dashed", color = "black") + # fill in with numbers from m_sleep
   theme_classic()
 
 
@@ -513,7 +632,7 @@ d_combined %>% ggplot(aes(x = Days_bl, y = Reaction)) + # again, fill in with nu
   geom_point() + 
   facet_wrap("Subject") +
   geom_abline(aes(intercept = intercept, slope =  11.47), linetype = "dashed", color = "blue")+
-  geom_abline(aes(intercept = 267.72, slope =  11.47), linetype = "dashed", color = "red")+
+  geom_abline(aes(intercept = 267.72, slope =  11.47), linetype = "dashed", color = "black")+
   theme_classic()
 
 
@@ -529,7 +648,7 @@ d_combined %>% ggplot(aes(x = Days_bl, y = Reaction)) + # again, fill in with nu
 
 > “Repeat the café robot simulation from the beginning of the chapter. This time, set rho to zero, so that there is no correlation between intercepts and slopes. How does the posterior distribution of the correlation reflect this change in the underlying simulation?”
 
-To answer this questions, I've made a function using McElreath's code, to 
+To answer this questions, I've made a function using McElreath's code, to show how variour rho's look. 
 
 ```{r 14.m1} 
 library(rethinking)
@@ -570,6 +689,9 @@ sim_mvn(rho = 0.5)
 sim_mvn(rho = 0.7)
 
 
+
+
+
 ```
 
 The question was, how does the posterior distribution refelct this change. And it seems like, well, the two values are not as correlated. Also the ellipses are way less round. Seems I got a little too cute with my code above though, so I'm going to 
@@ -580,7 +702,6 @@ b <- (-1) # average differene afternon wait time
 sigma_a <- 1 #std dev in intercepts
 sigma_b <- 0.5 #sd in slopes
 rho <- 0 # no correlation
-
 
 mu <- c(a,b)
 sigmas <- c(sigma_a, sigma_b) #standard deviations
@@ -596,8 +717,8 @@ a_cafe =vary_effects$Intercepts
 b_cafe = vary_effects$Slopes
 
 n_visits = 20 # how many visits?
-afternoon = rep(0:1, n_vistis * n_cafes/2)
-cafe_id = rep(1: n_cafes, each = n_vistis)
+afternoon = rep(0:1, n_visits * n_cafes/2)
+cafe_id = rep(1: n_cafes, each = n_visits)
 mu = a_cafe[cafe_id]*b_cafe[cafe_id]*afternoon
 sigma = 0.5
 wait = rnorm(n_visits*n_cafes, mu, sigma)
@@ -649,7 +770,7 @@ I think McElreath forgot to add something here, maybe an extra \beta somewhere. 
 
 >Use WAIC to compare this model to the model from the chapter, the one that uses a multi-variate Gaussian prior. Explain the result.”
 
-Rick is a little bit unclear here, but I assume he means that we should use his original simulation, not the one we did just now, so that's what I'm going to do. 
+McElreath is a little bit unclear here, but I assume he means that we should use his original simulation, not the one we did just now, so that's what I'm going to do. 
 
 ```{r}
 a <- 3.5 # average morning wait time
@@ -673,8 +794,8 @@ a_cafe =vary_effects$Intercepts
 b_cafe = vary_effects$Slopes
 
 n_visits = 20 # how many visits?
-afternoon = rep(0:1, n_vistis * n_cafes/2)
-cafe_id = rep(1: n_cafes, each = n_vistis)
+afternoon = rep(0:1, n_visits * n_cafes/2)
+cafe_id = rep(1: n_cafes, each = n_visits)
 mu = a_cafe[cafe_id]+b_cafe[cafe_id]*afternoon
 sigma = 0.5
 wait = rnorm(n_visits*n_cafes, mu, sigma)
@@ -730,6 +851,8 @@ m_covarying <- ulam(
 compare(m_covarying, m_novariation)
 ```
 
+
+
 :::
 
 # MN3
@@ -782,7 +905,7 @@ d100 <- simulate_cafe(visits = 100)
 
 ```
 
-I thought about being fancy and doing the comparisons of pooling and no pooling with some tidyverse style, but it's toomuch work, so I'm just going to hack into Rick's code.
+I thought about being fancy and doing the comparisons of pooling and no pooling with some tidyverse style, but it's toomuch work, so I'm just going to hack into McElerath's code.
 
 ```{r}
 
@@ -853,6 +976,8 @@ fit_plot(d20)
 fit_plot(d50)
 fit_plot(d100)
 ```
+Clearly, the larger the clusters are, the less pooling you get. Makes sense.
+
 # MN4: 
 
 ::: {.panel-tabset}
@@ -860,6 +985,8 @@ fit_plot(d100)
 ### a 
 
 >Fit a varying intercept & slope model to the running data, using rethinking::ulam or rstanarm::stan_glmer (or both).Visualize the results and briefly compare to results from MN 2. 
+
+Start by loading the data.
 
 ```{r}
 library(dplyr)
@@ -869,6 +996,8 @@ g <- cherry_blossom_sample %>%
   
  
 ```
+
+Fit the slopes model
 
 ```{r}
 
@@ -939,6 +1068,7 @@ dat_combined %>% ggplot(aes(x = age_c, y = net)) + # again, fill in with numbers
 
 
 ```
+This model captures more variation, when we plot it, we see that the regression lines better represent each individual runner. 
 
 ### b
 
@@ -999,12 +1129,16 @@ d_combined %>% ggplot(aes(x = Days_bl, y = Reaction)) + # again, fill in with nu
   geom_point() + 
   facet_wrap("Subject") +
   geom_abline(aes(intercept = intercept, slope =  slope), linetype = "dashed", color = "blue")+
-  geom_abline(aes(intercept = 267.72, slope =  11.47), linetype = "dashed", color = "blak")+
+  geom_abline(aes(intercept = 267.72, slope =  11.47), linetype = "dashed", color = "black")+
   theme_classic()
 
 
 ```
-
+```{r}
+precis(m_sleep)
+precis(m_sleep_slopes)
+```
+Again, the precision of the estimartes is narrower for the slopes model, especially for the sigmas, and the individual-level data shows that the indidivual estimates are better too.
 
 :::
 
@@ -1020,7 +1154,7 @@ Maybe this is cheating (if it is, I'll happily do a *"completering"*) but for th
 
 The following code is taken directly from Shtrivasan et al.
 
-Read in the Read in the Gibson and Wu data and subset head noun:
+First, I read in the Gibson and Wu data and subset head noun:
 
 ```{r loadgibsonwudata}
 rDat<-read.table("data/gibsonwu2012data.txt",header=TRUE)
@@ -1067,7 +1201,7 @@ I suppose part of this exercise is comparing the stan default priors against the
 
 With all that said, I'll run the data pure stan style, using Sorensen's code
 
-```{r}
+```{r message=FALSE, warning=FALSE, include=FALSE}
 fixEf_stan <- stan(file = "fixEf.stan", 
                  data = stanDat, 
                  iter = 2000, chains = 4)
@@ -1075,12 +1209,9 @@ fixEf_stan <- stan(file = "fixEf.stan",
 ```
 
 
-
-Their summary. This actually differs from what is in their paper, but this must be a typo. I assume somehow, the sd of the intercept got switched over to the lower CI.
-
 Now to run the same model in stanarm.
 
-```{r}
+```{r include=FALSE}
 fixEf_arm <- stan_glm(log(rt) ~ so, data = rDat, chains = 4)
 ```
 
@@ -1090,7 +1221,7 @@ print(fixEf_stan, pars = c("beta","sigma_e"), probs = c(0.025, 0.5, 0.975))
 posterior_summary(fixEf_arm) %>% round(2)
 ```
 
-It seems like for the fixed effects only model, the stan and stanarm produce identical results. This, of course, is a bad model. Let's see how it does with more advanced models. 
+It seems like for the fixed effects only model, the stan and stanarm produce identical results. This, of course, is a bad model. Let's see how the packages do with more advanced models. 
 
 ### Model 2, random intercepts for subjects:
 
@@ -1122,13 +1253,13 @@ stanDat<-list(subj = as.integer(factor(rDat$subj)),
               K = length(unique(rDat$item)))
 ```
 
-```{r compileandfitmodel}
+```{r compileandfitmodel, include=FALSE}
 ranInt_stan <- stan(file = "ranInt.stan", data = stanDat, 
                   iter = 2000, chains = 4)
 
 ```
 
-And now we do the same thing, but in stanarm. Again, i use `prior_summary()` to learn my default prior. I think you can quibble with the exponential priors for the sigmas, but overalll, these default priors actually seem pretty sensible to me.
+And now we do the same thing, but in stanarm. Again, i used `prior_summary()` to learn my default prior. I think you can quibble with the exponential priors for the sigmas, but overalll, these default priors actually seem pretty sensible to me.
 
 $$
 \begin{aligned}
@@ -1146,7 +1277,7 @@ $$
 
 The code for running the model is also much easier to write!
 
-```{r}
+```{r include=FALSE}
 ranINT_arm <- stan_lmer(log(rt) ~ 1 +  (1|subj) + (1|item) + so, data = rDat, chains = 4)
 ```
 
@@ -1162,13 +1293,14 @@ summary(ranINT_arm,
       digits = 2)
 
 ```
+
 Well, despite the differences, the estimates seem quite similar to me. The main thing I notice is that the  \sigma  estimates are higher in the stan model, unsurprising given the priors & it seems like setting some sensible priors would be an easy fix. 
 
 ### Model 3: Varying intercepts & varying slopes, no covariation
 
 Okay, now we have this half-way thing. They actually don't mention it in their paper, or at least the version that I have, but digging into their markdown file, I was able to get a hold of their code. This is the code they use:
 
-```{r}
+```{r include=FALSE}
 ############################
 ## VARYING INTERCEPTS, 
 ## VARYING SLOPES MIXED 
@@ -1196,6 +1328,7 @@ $$
 \sigma,\sigma_{\alpha[\text{Subject}[]}, \sigma_{\alpha[\text{Item}[]}, \sigma_{\beta[\text{Subject}[]}, \sigma_{\beta[\text{Item}[]}  &\sim \mathrm{Uniform}(0, \infty)
 \end{aligned}
 $$
+
 As for stanarm... I'm not entirely sure how to even write a model like that. The following solution is the closest I can come up with. I *think* it works, because so only has two levels. So, in practice, what I'm doing is calculating unique intercepts for each combination of subject and so. Well, I feel very uncertain that this is actually doing the same thing as Sorensen et al, but this illustrates that stanarm isn't well set up to do this wrong thing. I suppose that's good!
 
 Anyway, this is how I would write it out using McElreath style notation.
@@ -1213,8 +1346,10 @@ $$
 \sigma &\sim \mathrm{Exponential}(1.7)
 \end{aligned}
 $$
+
 And this is in r code. 
-```{r}
+
+```{r include=FALSE}
 tmp <- rDat %>% 
   mutate(so = as.factor(so))
 ranINT_nocor_arm <- stan_lmer(log(rt) ~ 1 +  (1|subj:so) + (1|item:so) + so, data = tmp, chains = 4)
@@ -1235,7 +1370,7 @@ round(summary(ranINT_nocor_arm,
 
 ```
 
-Interestingly, the effect of so is stronger in the stanarm model. Also an effect of the priors or something else?
+Interestingly, the effect of so is stronger in the stanarm model. Also an effect of the priors or something else? Could also be that I didn't quite manage to specify the same models.
 
 ### Model 4: Covarying slopese and intercepts
 
@@ -1265,10 +1400,11 @@ $$
 \textbf{R}& \sim \mathrm{LKJcorr}(?) 
 \end{aligned}
 $$
+
 Okay, that was not easy to do. Anyway, to fit this model, I once again use Sorensens code to run this model. 
 
 
-```{r}
+```{r message=TRUE, warning=TRUE, include=FALSE}
 ranIntSlpFit <- stan(file = "ranIntSlp.stan", data = stanDat, 
                      iter = 2000, chains = 4)
 ```
@@ -1306,7 +1442,7 @@ tmp <- rDat %>%
 ranINT_cor_arm <- stan_lmer(log(rt) ~ 1 +  (1 + so|subj) + (1+so|item) + so, data = tmp, chains = 4)
 ```
 
-The first thing I notice, is that the stanarm version was the slowest. Let's compare the model outputs!
+The first thing I notice, is that the stanarm version was the slowest to run. But let's compare the model outputs!
 
 ```{r}
 print(ranIntSlpFit, pars = c("beta", "sigma_e", "sigma_u", "sigma_w"),
@@ -1319,4 +1455,4 @@ round(summary(ranINT_cor_arm,
 
 ```
 
-
+The outputs are again pretty similar. But again, Stanarm gives slightly largder estimates for the effect os so, but also slightly larger posteriors. Why this happens is a little bit beyond be, but if I were to guess, it might be differences in the underlying MCMC machinery, or in the priors, doing something where the 
