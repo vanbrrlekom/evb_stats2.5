@@ -23,7 +23,6 @@ cat("\014")     # clear console (same as Ctrl-L in console)
 set.seed(123)   # Makes it reproducable also if random number generators are used
 ```
 
-
 ```{r 0.2, output = FALSE}
 library(rethinking)
 library(lme4)
@@ -36,6 +35,7 @@ library(bayesrules)
 set.seed(123)
 
 ```
+
 
 ## BR 15
 
@@ -50,6 +50,7 @@ Here are my answers to the chapter 15 exercises, and in class. I'm trying to use
 
 First, I load the data and fit a simple model.
 
+
 ```{r 15.4.1, output = FALSE}
 d <- sleepstudy # first, import the data
 
@@ -58,9 +59,11 @@ s <- subset(sleepstudy, Days >= 2) #remove first two days
 m0 <- stan_glm(Reaction ~ Days, data = s) #fit the data
 ```
 
+
 Then I sample from the posterior and make a very simple plot, reflecting the effect of days on reaction time. Because ggplot has glm built in, I'm able to call it when creating this plot.Nice! 
 
 This plot is completely pooled, and it ignores the fact that the data points are not independent, but come from multiple trials within the same person. This is not good, because it is overconfident about the effect of days on reaction time!
+
 
 ```{r 15.4.2, message = FALSE, warning=FALSE}
 
@@ -70,6 +73,7 @@ ggplot(s, aes(y =Reaction, x =  Days))+
   theme_tidybayes() ## I'll b trying out various themes as well. Why? For fun!
 
 ```
+
 > using careful notation, write out the model
 
 I might write the model like this: 
@@ -90,6 +94,7 @@ $$
 
 Again, I'm able to do all that the question asks within ggplot by calling stan_glm and using `facet_wrap()` to the same operation for each subjct separately. This works fine, but we might be a little skeptical of for example subject 335, who got faster as the days go by. A partial pooling approach would probably adjust their scores a little.
 
+
 ```{r 15.6.1, message=FALSE}
 ggplot(s, aes(x = Days, y = Reaction, color =Subject)) +
   geom_point() +
@@ -98,6 +103,7 @@ ggplot(s, aes(x = Days, y = Reaction, color =Subject)) +
   theme_light()
 
 ```
+
 
 >C. I think the question was to write the model out in notation.
 
@@ -134,6 +140,7 @@ logit_p &= \alpha_{\text{POND[i]}}\\
 $$
 
 I'll be using McElreath's code to make the simulations, but turning it into a function to be able to carry it out many times and compare the effects of using many different parameters. The code chunk below 
+
 
 ```{r MMN1.1, results = "hide"}
 sim_tads <- function(a_bar =2, sigma = 0.1, nponds = 60, nclusters = 60, title = "opps, forgot to add a title"){
@@ -211,7 +218,9 @@ for (j in 0:3) {
 }
 ```
 
+
 And now let's put that function to use and try out some variations of different parameters
+
 
 ```{r MMN1.2, message=FALSE, results = "hide", fig.keep='all'}
 sim_tads(title = "A bar = 2, Sigma = 0.1") ## McElreaths' baseline
@@ -222,6 +231,7 @@ sim_tads(a_bar = 10, title = "A bar = 10, Sigma = 0.1") #High a bar
 
 
 ```
+
 
 Seenms like a few things happend here. First, when the survival rate was esentially, 100%, increasing clusters did not have any effect on the error rate. In all cases, there was more pooling with fewer smaller clusters, as we would expect.
 
@@ -252,6 +262,7 @@ $$
  
  And of course, specify it using rethinking code.
  
+
 ```{r SR13-M1.1, results= "hide", message = FALSE}
 data(reedfrogs)
 d <- reedfrogs %>% 
@@ -275,7 +286,9 @@ m0 <- ulam(
   ), data = dat , chains = 4 , log_lik = TRUE, refresh = 0)
 ```
 
+
 Now, we do a more complicated model with main effects of both size and predation.
+
 
 
 ```{r SR13-M1.2, results = "hide", message=FALSE}
@@ -336,7 +349,9 @@ sigma_int <-c(median(post_int$sigma), HPDI(post_int$sigma))
 
 ```
 
+
 We did this in class, so I'm going to highlight the important part, that we saw changes in sigma, but nothing else
+
 
 ```{r, SR13-M1.3}
 
@@ -344,14 +359,17 @@ rbind(sigma_size, sigma_pred, sigma_mfx, sigma_int)
 ```
 
 
+
 Seems like including predator reduces sigma, but that's it!
 
 ### M2
 > “Compare the models you fit just above, using WAIC. Can you reconcile the differences in WAIC with the posterior distributions of the models?”
 
+
 ```{r SR13-M2.1}
 compare(m_mfx, m_size, m_int, m_pred)
 ```
+
 
 The waic values are pretty similar. Maybe that's because our ability to predict the data didn't change much. 
 
@@ -363,6 +381,7 @@ The waic values are pretty similar. Maybe that's because our ability to predict 
 
 
 I start by fitting Gaussian and Cauchy models, like the question asks. 
+
 
 ```{r SR13-M3.1, message = FALSE, results = "hide"}
 m_cauchy <- ulam(
@@ -386,14 +405,18 @@ m_gaussian <- ulam(
 ```
 
 
+
 Okay, first, we are going to sample from the posterior distrbutions
+
 
 ```{r SR13-M3.2}
 post_cauchy <- extract.samples(m_cauchy) 
 post_gaussian <- extract.samples(m_gaussian)
 ```
 
+
 And then compare the values that we get from that 
+
 
 ```{r SR13-MR.3}
 # Yes, using this unweieldy code
@@ -406,6 +429,7 @@ rbind(cauchy_abar, gaussian_abar, cauchy_sigma, gaussian_sigma)
 
 ```
 
+
 And doing this, it seems that cauchy leads to wider posteriors for abar and lower estimates of sigma.
 
 
@@ -414,6 +438,7 @@ And doing this, it seems that cauchy leads to wider posteriors for abar and lowe
 >αTANK~Student(2,α,σ)
 Refer back to the Student-t example in Chapter 7 (page 234), if necessary. Compare the resulting posterior to both the original model and the Cauchy model in 13M3. Can you explain the differences and similarities in shrinkage in terms of the properties of these distributions?
 ”
+
 
 ```{r SR13-M4.1, message = FALSE, results = "hide"}
 m_student <- ulam(
@@ -426,7 +451,9 @@ m_student <- ulam(
   ), data = dat , chains = 4 , log_lik = TRUE, refresh = 0)
 ```
 
+
 Doing the same as in m3:
+
 
 ```{r SR13-M4.2}
 post_student <- extract.samples(m_student)
@@ -435,11 +462,14 @@ student_abar = c(median(post_student$a_bar), HPDI(post_student$a_bar))
 student_sigma = c(median(post_student$sigma), HPDI(post_student$sigma))
 ```
 
+
 And then putting it all together again
+
 
 ```{r SR13-M4.3}
 rbind(cauchy_abar, gaussian_abar, student_abar, cauchy_sigma, gaussian_sigma, student_sigma)
 ```
+
 
 It seems like student's distribution is somewhere between gaussian and cauchy
 
@@ -454,6 +484,7 @@ It seems like student's distribution is somewhere between gaussian and cauchy
 
 First, load the data and wrangle it lightly. The running data shows the effect of aging on running speeds. 
 
+
 ```{r MMN2.1}
 data("cherry_blossom_sample")
 dat <- cherry_blossom_sample %>% 
@@ -462,7 +493,9 @@ dat <- cherry_blossom_sample %>%
  
 ```
 
+
 Fit a simple varying intercepts model
+
 
 ```{r MMN2.2, message = FALSE, results = "hide"}
 
@@ -480,8 +513,10 @@ m_runner <- ulam(
 
 ```
 
+
 How to visualize this? Maybe an overall plot with all the data and then a few plots for the individual runners to show that this is not good enough. The first plot shows the overall relationship between age and time. This is the unpooled data. Next, the data for individual runners is shown. The black line represents the complete pooling and the blue line shows partial pooling using the intercepts only model. 
  
+
 ```{r MMN2.3, message = FALSE, warning=FALSE, }
 
 post <- extract.samples(m_runner)$a %>% # get the intercepts for each runner in a dataframe
@@ -511,10 +546,12 @@ dat_combined %>% ggplot(aes(x = age_c, y = net)) + # again, fill in with numbers
 
 
 ```
+
  
 ### b
 
 For this model, we want to predict Reaction time as a function of days and subject.
+
 
 ```{r MMN2.4, message = FALSE}
 d <- sleepstudy %>% filter(Days>1) %>% mutate(Days_bl = Days-2)
@@ -532,7 +569,9 @@ m_sleep <- ulam(
 
 ```
 
+
 I'm going to come back to this, but here is the code to visualize the data. The first plot shows the overall relationship between age and time. This is the unpooled data. Next, the data for individual runners is shown. The black line represents the complete pooling. 
+
 
 ```{r}
 
@@ -570,6 +609,7 @@ d_combined %>% ggplot(aes(x = Days_bl, y = Reaction)) + # again, fill in with nu
 
 ```
 
+
 :::
 
 # SR 14
@@ -581,6 +621,7 @@ d_combined %>% ggplot(aes(x = Days_bl, y = Reaction)) + # again, fill in with nu
 > “Repeat the café robot simulation from the beginning of the chapter. This time, set rho to zero, so that there is no correlation between intercepts and slopes. How does the posterior distribution of the correlation reflect this change in the underlying simulation?”
 
 To answer this questions, I've made a function using McElreath's code - `sim_mvn()`.
+
 
 ```{r SR14-M1.1} 
 library(MASS) # had to load this, seems some other package was overwriting the mvrnorm function
@@ -615,7 +656,9 @@ sim_mvn <- function(rho){
 }
 ```
 
+
 And now I carry out this function over `rho` of 0.1, 0.5, and 0.7.
+
 
 ```{r SR14-M1.2, results= "hide", fig.keep= 'all'} 
 sim_mvn(rho = 0.1)
@@ -623,9 +666,11 @@ sim_mvn(rho = 0.5)
 sim_mvn(rho = 0.7)
 ```
 
+
 The question was, how does the posterior distribution refelct this change. And it seems like, well, the two values are not as correlated. Also the ellipses are way less round. Seems like this doesn't actually answer the question, but the graphs look neat, so I'm going to keep them!
 
 Instead, I'm going to keep going and carry out the cafe simulations using McElreath's code.
+
 
 ```{r SR14-M1.3}
 a <- 3.5 # average morning wait time
@@ -656,7 +701,9 @@ wait = rnorm(n_visits*n_cafes, mu, sigma)
 d = tibble(cafe = cafe_id, afternoon = afternoon, wait = wait)
 ```
 
+
 Having simulated data, let's fit a model. The question is, when rho is zero how do our posteriors differ from our priors?
+
 
 ```{r SR14-M1.4, results = "hide", warning=FALSE, message=FALSE, fig.keep='all'}
 m_cafesim <- ulam(
@@ -675,7 +722,9 @@ m_cafesim <- ulam(
 )
 ```
 
+
 Having fit the model, let's plot the posterior against the prior. What do we get?
+
 
 ```{r SR14-M1.5, ouput = FALSE}
 post = extract.samples(m_cafesim)
@@ -683,6 +732,7 @@ dens( post$rho[,1,2] , xlim=c(-1,1) )
 R <- rlkjcorr( 1e4 , K=2 , eta=2 )# prior
 dens( R[,1,2] , add=TRUE , lty=2 )
 ```
+
 
 Ah. It seems the takeaway is that the posterior is almost exactly the same as the prior. 
 
@@ -706,6 +756,7 @@ I think McElreath forgot to add something here, maybe an extra $\beta$ somewhere
 >Use WAIC to compare this model to the model from the chapter, the one that uses a multi-variate Gaussian prior. Explain the result.”
 
 McElreath is a little bit unclear here, but I assume he means that we should use his original simulation, not the one we did just now, so that's what I'm going to do. 
+
 
 ```{r, SR14-M2.1, results = "hide"}
 library(MASS)
@@ -739,7 +790,9 @@ wait = rnorm(n_visits*n_cafes, mu, sigma)
 d = tibble(cafe = cafe_id, afternoon = afternoon, wait = wait)
 ```
 
+
 having simulated the data, let's fit two models, one with covarying slopes and intercepts and one just varying slopes & intercepts.
+
 
 ```{r SR14-M2.2, ouput = FALSE}
 
@@ -784,11 +837,14 @@ m_covarying <- ulam(
 
 ```
 
+
 When we compare them, they look pretty similar? I wonder if I did something wrong or if there is a deeper point here...
+
 
 ```{r}
 compare(m_covarying, m_novariation)
 ```
+
 
 
 
@@ -800,9 +856,13 @@ compare(m_covarying, m_novariation)
 
 Here's how I feel about the café data.
 
+
 {{< video https://www.youtube.com/watch?v=UPw-3e_pzqU >}}
 
+
+
 Anyway, since the question involves carrying out the same operation multiple times with different parameters, I'm going to start by making a function of the whole thing, again, basically taking a version o McElreath's code. 
+
 
 ```{r MN3.1}
 simulate_cafe <- function(visits = visits){
@@ -836,7 +896,9 @@ simulate_cafe <- function(visits = visits){
 }
 ```
 
+
 And then I run the simulations with varying numbers of visits. 
+
 
 ```{r MN3.2}
 d2 <- simulate_cafe(visits = 2)
@@ -848,7 +910,9 @@ d100 <- simulate_cafe(visits = 100)
 
 ```
 
+
 I thought about being fancy and doing the comparisons of pooling and no pooling with some tidyverse style, but it's too much work, so I'm just going to hack into McElerath's code again.
+
 
 ```{r MN3.3, results='hide', fig.keep='all'}
 fit_plot <- function(data = d2){
@@ -911,7 +975,6 @@ for ( l in c(0.1,0.3,0.5,0.8,0.99) )
 }
 ```
 
-
 ```{r MN3.4, warning=FALSE, results= "hide", fig.keep="all"}
 fit_plot(d2)
 fit_plot(d10)
@@ -919,6 +982,7 @@ fit_plot(d20)
 fit_plot(d50)
 fit_plot(d100)
 ```
+
 Clearly, the larger the clusters are, the less pooling you get. Makes sense.
 
 # MN4: 
@@ -931,6 +995,7 @@ Clearly, the larger the clusters are, the less pooling you get. Makes sense.
 
 Start by loading the data.
 
+
 ```{r MN4A.1}
 library(dplyr)
 data("cherry_blossom_sample")
@@ -940,7 +1005,9 @@ g <- cherry_blossom_sample %>%
  
 ```
 
+
 Fit the slopes model
+
 
 ```{r MN4A.2, message=FALSE, warning=FALSE, results= "hide", fig.keep="all"}
 
@@ -965,16 +1032,20 @@ m_runner_slopes <- ulam(
 
 ```
 
+
 This recapitulates what we did in MN2, but now with slopes. So I'm going to build on that code.
 
 First, let's just compare the outputs of both models.
+
 
 ```{r MN4A.3}
 precis(m_runner)
 precis(m_runner_slopes)
 ```
+
 These estimates are fairly similar. I would have expected the posteriors of the beta and alpha estimates to be wider for the slopes model and the sigma estimates to be narrower, but this seem to not exactly be the case. Interesting...
  
+
 ```{r MN4A.4, results= "hide", fig.keep="all"}
 
 post_a <- extract.samples(m_runner_slopes)$a_runner %>%  # get the individuals interceps
@@ -1016,6 +1087,7 @@ dat_combined %>% ggplot(aes(x = age_c, y = net)) + # again, fill in with numbers
 
 ```
 
+
 Unsurprisingly, the plots suggest that the slopes models are better at capturing individual variation. 
 
 ### b
@@ -1023,6 +1095,7 @@ Unsurprisingly, the plots suggest that the slopes models are better at capturing
 > Do the same for the sleepstudy data
 
 Once again, load the data and fit the model.
+
 
 ```{r MNB.1, output = FALSE, results= "hide", fig.keep="all"}
 d <- sleepstudy %>% filter(Days>1) %>% mutate(Days_bl = Days-2)
@@ -1043,7 +1116,6 @@ m_sleep_slopes <- ulam(
   log_lik = TRUE, 
   refresh = 0)
 ```
-
 
 ```{r}
 
@@ -1084,10 +1156,12 @@ d_combined %>% ggplot(aes(x = Days_bl, y = Reaction)) + # again, fill in with nu
 
 
 ```
+
 ```{r}
 precis(m_sleep)
 precis(m_sleep_slopes)
 ```
+
 
 Again, the precision of the estimates is better for the slopes model, especially for the sigmas, and the individual-level data shows that the indidivual estimates are better too.
 
@@ -1099,13 +1173,14 @@ Again, the precision of the estimates is better for the slopes model, especially
 
 Maybe this is cheating (if it is, I'll happily do a *"kompletering"*) but for the STV models, I've basically copy-pasted what they did. I had a look in the stan-files, but I can't really pretend that I understand them. 
 
-::: {.panel-tabset}
+::: {tabset}
 
 ### Setup
 
 The following code is taken directly from Shtrivasan et al.
 
 First, I read in the Gibson and Wu data and subset head noun:
+
 
 ```{r loadgibsonwudata}
 rDat<-read.table("data/gibsonwu2012data.txt",header=TRUE)
@@ -1128,6 +1203,7 @@ stanDat<-list(rt = rDat$rt,
 
 
 ```
+
 
 ### Model 1: Fixed effects only
 
@@ -1152,6 +1228,7 @@ I suppose part of this exercise is comparing the stan default priors against the
 
 With all that said, I'll run the data pure stan style, using Sorensen's code
 
+
 ```{r message=FALSE, warning=FALSE, output=FALSE}
 fixEf_stan <- stan(file = "fixEf.stan", 
                  data = stanDat, 
@@ -1160,7 +1237,9 @@ fixEf_stan <- stan(file = "fixEf.stan",
 ```
 
 
+
 Now to run the same model in stanarm.
+
 
 ```{r include=FALSE}
 fixEf_arm <- stan_glm(log(rt) ~ so, data = rDat, chains = 4)
@@ -1171,6 +1250,7 @@ print(fixEf_stan, pars = c("beta","sigma_e"), probs = c(0.025, 0.5, 0.975))
 
 posterior_summary(fixEf_arm) %>% round(2)
 ```
+
 
 It seems like for the fixed effects only model, the stan and stanarm produce identical results. This, of course, is a bad model. Let's see how the packages do with more advanced models. 
 
@@ -1194,6 +1274,7 @@ $$
 
 Now I run that model, using Sorensen et al's code.
 
+
 ```{r setupdatadatamodel2}
 stanDat<-list(subj = as.integer(factor(rDat$subj)),
               item = as.integer(factor(rDat$item)),
@@ -1209,6 +1290,7 @@ ranInt_stan <- stan(file = "ranInt.stan", data = stanDat,
                   iter = 2000, chains = 4)
 
 ```
+
 
 And now we do the same thing, but in stanarm. Again, i used `prior_summary()` to learn my default prior. I think you can quibble with the exponential priors for the sigmas, but overalll, these default priors actually seem pretty sensible to me.
 
@@ -1228,11 +1310,14 @@ $$
 
 The code for running the model is also much easier to write!
 
+
 ```{r include=FALSE}
 ranINT_arm <- stan_lmer(log(rt) ~ 1 +  (1|subj) + (1|item) + so, data = rDat, chains = 4)
 ```
 
+
 And if we look at the outputs of the two models side by side, what does it look like?
+
 
 ```{r}
 print(ranInt_stan, pars = c("beta", "sigma_e", "sigma_u", "sigma_w"),
@@ -1245,11 +1330,13 @@ summary(ranINT_arm,
 
 ```
 
+
 Well, despite the differences, the estimates seem quite similar to me. The main thing I notice is that the  \sigma  estimates are higher in the stan model, unsurprising given the priors & it seems like setting some sensible priors would be an easy fix. 
 
 ### Model 3: Varying intercepts & varying slopes, no covariation
 
 Okay, now we have this half-way thing. They actually don't mention it in their paper, or at least the version that I have, but digging into their markdown file, I was able to get a hold of their code. This is the code they use:
+
 
 ```{r include=FALSE}
 
@@ -1258,6 +1345,7 @@ ranIntSlpNoCorFit <- stan(file = "ranIntSlpNoCor.stan", data = stanDat,
 
 
 ```
+
 
 Again, if we write that using McElreath's style of notation, it might look something like this. Because this model isn't in the version of the paper, I'm not 100% sure about the priors, but this is my buest guess. Also, something nice about McElreath's notation is that makes it clear that a varying slopes model like this is just a special case of an interaction, but with hyperpriors on the slopes. Nice. 
 
@@ -1295,13 +1383,16 @@ $$
 
 And this is in r code. 
 
+
 ```{r output=FALSE}
 tmp <- rDat %>% 
   mutate(so = as.factor(so))
 ranINT_nocor_arm <- stan_lmer(log(rt) ~ 1 +  (1|subj:so) + (1|item:so) + so, data = tmp, chains = 4)
 ```
 
+
 Well, the model certainly runs at least. Let's look at the summary outputs.
+
 
 ```{r}
 print(ranIntSlpNoCorFit, 
@@ -1315,6 +1406,7 @@ round(summary(ranINT_nocor_arm,
       )[,],2)
 
 ```
+
 
 Interestingly, the effect of so is stronger in the stanarm model. Also an effect of the priors or something else? Could also be that I didn't quite manage to specify the same models.
 
@@ -1350,10 +1442,12 @@ $$
 Okay, that was not easy to do. Anyway, to fit this model, I once again use Sorensens code to run this model. 
 
 
+
 ```{r message=TRUE, warning=TRUE, output=FALSE}
 ranIntSlpFit <- stan(file = "ranIntSlp.stan", data = stanDat, 
                      iter = 2000, chains = 4)
 ```
+
 
 And then I do the same in stanarm. Stanarm automatically uses the following priors: 
 
@@ -1382,13 +1476,16 @@ $$
 \end{aligned}
 $$
 
+
 ```{r}
 tmp <- rDat %>% 
   mutate(so = as.factor(so))
 ranINT_cor_arm <- stan_lmer(log(rt) ~ 1 +  (1 + so|subj) + (1+so|item) + so, data = tmp, chains = 4)
 ```
 
+
 The first thing I notice, is that the stanarm version was the slowest to run. But let's compare the model outputs!
+
 
 ```{r}
 print(ranIntSlpFit, pars = c("beta", "sigma_e", "sigma_u", "sigma_w"),
@@ -1400,5 +1497,6 @@ round(summary(ranINT_cor_arm,
       )[,],2)
 
 ```
+
 
 The outputs are again pretty similar. But again, Stanarm gives slightly larger estimates for the effect os so, but also slightly larger posteriors. Why this happens is a little bit beyond be, but if I were to guess, it might be differences in the underlying MCMC machinery, or in the priors, doing something where the 
