@@ -516,7 +516,7 @@ dat_combined %>% ggplot(aes(x = age_c, y = net)) + # again, fill in with numbers
 
 For this model, we want to predict Reaction time as a function of days and subject.
 
-```{r MMN2.4, message = FALSE}
+```{r MMN2.4, message = FALSE, results= "hide", fig.keep="all"}
 d <- sleepstudy %>% filter(Days>1) %>% mutate(Days_bl = Days-2)
 
 m_sleep <- ulam(
@@ -537,7 +537,7 @@ I'm going to come back to this, but here is the code to visualize the data. The 
 ```{r}
 
 post <- extract.samples(m_sleep)$a %>% 
-  as.tibble() %>% 
+  as_tibble() %>% 
   pivot_longer(cols = everything(), names_to = "Subject") %>% 
   group_by(Subject) %>% 
   summarise(intercept = median(value)) %>% 
@@ -574,7 +574,7 @@ d_combined %>% ggplot(aes(x = Days_bl, y = Reaction)) + # again, fill in with nu
 
 # SR 14
 
-::: {.panel-tabset}
+:::{.panel-tabset}
 
 ### M1
 
@@ -921,7 +921,7 @@ fit_plot(d100)
 ```
 Clearly, the larger the clusters are, the less pooling you get. Makes sense.
 
-# MN4: 
+# MN4 
 
 ::: {.panel-tabset}
 
@@ -1129,7 +1129,9 @@ stanDat<-list(rt = rDat$rt,
 
 ```
 
-### Model 1: Fixed effects only
+### Model 1
+
+##### Fixed effects only
 
 Now we start getting the model. Their first model is just a fixed effects model. Writing it out in McElreath's style o notation, it might look something like this:
 
@@ -1174,7 +1176,9 @@ posterior_summary(fixEf_arm) %>% round(2)
 
 It seems like for the fixed effects only model, the stan and stanarm produce identical results. This, of course, is a bad model. Let's see how the packages do with more advanced models. 
 
-### Model 2, random intercepts for subjects:
+### Model 2
+
+##### Random intercepts for subjects:
 
 Okay, here is my take on Sorenson et al's model 2, written out in McElreath style. Again, it's crazy to see these uniform priors going to infinity-
 
@@ -1247,7 +1251,9 @@ summary(ranINT_arm,
 
 Well, despite the differences, the estimates seem quite similar to me. The main thing I notice is that the  \sigma  estimates are higher in the stan model, unsurprising given the priors & it seems like setting some sensible priors would be an easy fix. 
 
-### Model 3: Varying intercepts & varying slopes, no covariation
+### Model 3 
+
+##### Varying intercepts & varying slopes, no covariation
 
 Okay, now we have this half-way thing. They actually don't mention it in their paper, or at least the version that I have, but digging into their markdown file, I was able to get a hold of their code. This is the code they use:
 
@@ -1318,7 +1324,9 @@ round(summary(ranINT_nocor_arm,
 
 Interestingly, the effect of so is stronger in the stanarm model. Also an effect of the priors or something else? Could also be that I didn't quite manage to specify the same models.
 
-### Model 4: Covarying slopese and intercepts
+### Model 4
+
+##### Covarying slopese and intercepts
 
 Now this is the main model, of course. This one has both varying intercepts and varying slopes and they covary. I've set myself up for a challenge, writing all these out in McElreath code, but here goes.
 
@@ -1382,7 +1390,7 @@ $$
 \end{aligned}
 $$
 
-```{r}
+```{r, results= "hide", fig.keep="all"}
 tmp <- rDat %>% 
   mutate(so = as.factor(so))
 ranINT_cor_arm <- stan_lmer(log(rt) ~ 1 +  (1 + so|subj) + (1+so|item) + so, data = tmp, chains = 4)
