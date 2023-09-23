@@ -1,5 +1,5 @@
 ---
-title: "exercises2"
+title: "Stats 2.5 Exercises"
 author: "Elli van Berlekom"
 execute:
   results: "hide"
@@ -37,9 +37,10 @@ set.seed(123)
 
 ```
 
+I'm trying to use this exercise as a reason to get more familiar with quarto. One thing I can do with quarto is to include a comment option. To add a comment, just highlight the relevant section of the text. It will prompt you to create an account, which turns out to be a simple process and it hasn't sent me any spam yet at least.
 ## BR 15
 
-Here are my answers to the chapter 15 exercises, and in class. I'm trying to use this exercise as a reason to get more familiar with quarto. One thing I can do with quarto is to include a comment option. To add a comment, just highlight the relevant section of the text. It will prompt you to create an account, which turns out to be a simple process and it hasn't sent me any spam yet at least. 
+Here are my answers to the chapter 15 exercises, and in class. 
 
 ::: {.panel-tabset}
 
