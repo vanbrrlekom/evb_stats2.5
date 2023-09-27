@@ -98,7 +98,7 @@ $$
 $$
 
 ```{r null model}
-# Currently, the code is commented out. To run the model, uncomment the code and rerun the chunk
+# Currently, the code is commented out. To run the model, uncomment the code and rerun the chunk. I did this so I woulnd't have to run the model every time I wanted to check my output. 
 
 #fit_null <- stan_lmer(rating ~ 1  + (1 |id) + (1 |test_face),
    # data = d,
