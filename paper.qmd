@@ -1,6 +1,7 @@
 ---
 title: "Face adaptation to gender depends on gender binary beliefs"
 author: "Elli van Berlekom"
+bibliography: "stats.bib"
 execute:
   results: "hide"
   fig.keep: "all"
@@ -9,7 +10,6 @@ format:
     theme: simplex
     code-fold: true
     code-tools: true
-    toc: true
     html-math-method: katex
     css: styles.css
     comments: 
@@ -30,6 +30,8 @@ set.seed(123)   # Makes it reproducable also if random number generators are use
 ```{r load dependencies, include = FALSE}
 library(tidyverse)
 library(rstanarm)
+library(citr)
+library(papaja)
 ```
 
 
@@ -56,9 +58,9 @@ d <- read.csv("data/paper_data.csv") %>%
 
 # Background
 
-People are generally attentive to gender in faces, and good at categorizing gender correctly (reference). That said, a number of studies have also showed that people can be affected by other stimuli when categorizing faces. An example of this is what has been termed a face adaptation effect (McLeod). Face adaptation is similar to other types of sensory adaptation =  such as color adaptation where for example exposiure to blue makes white seem more yellow =  but works for higher level properties of faces. This has been shown for gender: after watching a gendered face - for example a feminine face - the next face appears more masculine. To me, adaptation implies a specific neural mechanism and a change in perception, however, as other authors have pointed out, it is equally plausible that the change happens in terms of interpretation. For that reason, I will refer to the effect as a contrast effect, rather than an adaptation effect.
+People are generally attentive to gender in faces, and good at categorizing gender correctly (Yang & Dunham, 2019). That said, a number of studies have also showed that people can be affected by other stimuli when categorizing faces. An example of this is what has been termed a face adaptation effect (Webster & MacLeod, 2011). Face adaptation is similar to other types of sensory adaptation - such as color adaptation where for example exposure to blue makes white seem more yellow - but on variations in faces (Webster, 2015). Gender adaptation follows a similar pattern: after watching a gendered face - for example a feminine face, the next face appears more masculine (Webster et al, 2004). Referring to this phenomeon as adaptation implies a specific neural mechanism or a change in perception, however, others have challenged this interpretation, noting the effect may be purely decisioanl (Storrs, 2015). For that reason, I will refer to the effect as a contrast effect, rather than an adaptation effect.
 
-It has furthermore been shown that this effect can be elicited by non-face stimuli also. For example, exposure to feminine body types have made neutral faces seem more masculine (ref). This contrast effect has also been observed for race - a neutral face being perceived as more Black followed by exposure to a white face. In this area, the strength of the contrast effects has been linked to essentialist views on racial differences. Drawing on this study, we were curious if the same could be said for gender. In other words, would there be a stronger contrast effect for particiapnts who held gender essentialist views.
+It has furthermore been shown that this effect can be elicited by non-face stimuli also. For example, exposure to feminine body types have made neutral faces seem more masculine (Ghuman et al, 2010). This contrast effect has also been observed for race - a neutral face being perceived as more Black followed by exposure to a white face (Elliott et al., 2010). For race, the strength of the contrast effects was linked to essentialist views on racial differences, in other words, people with racist views displayed a stronger contrast effect to racialized faces. Drawing on this study, we were curious if the same could be said for gender. In other words, would there be a stronger contrast effect for particiapnts who held gender essentialist views.
 
 The data were collected from around 200 particpants who rated a set of 12 gender neutral faces on a scale from 0 (fully feminine) to 100 (fully masculine). The 12 gender neutral faces were preceded by one of 6 masculine faces or one of 6 feminine faces. The design was fully within-participants, so each participant saw every combination of neutral face and gendered face (7\*12 = 84 trials). Originally, we had aggregated the scores for each participant, to calculate an average "masculine" score and an average "feminine" score. However, the scores were quite noisy, and we didn't see clear effects. On the other hand, by aggregating the scores for each participant, we lost a lot of data. I was interested in using this exercise as an exercise to revisit that data, and a chance to deepen my understanding of multilevel models.
 
@@ -412,4 +414,15 @@ ggplot(data = data.frame(interaction),
 # Conclusion
 
 Similar to contrast effects of race, the contrast effect of gender on faces seems to be determined by gender essentialism. I didn't find any overall contrast effect of gender but this seemed to be because the effect was masked by an interaction between contrast effect and gender essentialism. Participants who held gender essentialist views displayed the effected contrast effect. However, people who held gender non-essential views displayed an unexpected similarity effect. That is, they thought a face was more feminine following a feminine face and more masculine following a masculine face. 
+
+# References
+
+Buckingham, G., DeBruine, L. M., Little, A. C., Welling, L. L. M., Conway, C. A., Tiddeman, B. P., & Jones, B. C. (2006). Visual adaptation to masculine and feminine faces influences generalized preferences and perceptions of trustworthiness. Evolution and Human Behavior, 27(5), 381–389. https://doi.org/10.1016/j.evolhumbehav.2006.03.001
+Elliott, S. L., Chu, K., & Coleman, J. (2017). Attitudes about race predict individual differences in face adaptation aftereffects. Vision Research, 141, 237–246. https://doi.org/10.1016/j.visres.2016.12.011
+Ghuman, A. S., McDaniel, J. R., & Martin, A. (2010). Face Adaptation without a Face. Current Biology, 20(1), 32–36. https://doi.org/10.1016/j.cub.2009.10.077
+Palumbo, R., Laeng, B., & Tommasi, L. (2013). Gender-specific aftereffects following adaptation to silhouettes of human bodies. Visual Cognition, 21(1), 1–12. https://doi.org/10.1080/13506285.2012.753970
+Storrs, K. R. (2015). Are high-level aftereffects perceptual? Frontiers in Psychology, 6. https://doi.org/10.3389/fpsyg.2015.00157
+Webster, M. A., Kaping, D., Mizokami, Y., & Duhamel, P. (2004). Adaptation to natural facial categories. Nature, 428(6982), 557–561. https://doi.org/10.1038/nature02420
+Webster, M. A., & MacLeod, D. I. A. (2011). Visual adaptation and face perception. Philosophical Transactions of the Royal Society B: Biological Sciences, 366(1571), 1702–1725. https://doi.org/10.1098/rstb.2010.0360
+Yang, X., & Dunham, Y. (2019). Hard to disrupt: Categorization and enumeration by gender and race from mixed displays. Journal of Experimental Social Psychology, 85, 103893. https://doi.org/10.1016/j.jesp.2019.103893
 
